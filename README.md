@@ -76,27 +76,14 @@ Each shape trial follows this sequence:
 
 ### 1. Install Prerequisites
 
-```bash
-# Install Python 3.11 (if not already installed)
-winget install Python.Python.3.11
+- **Python 3.11.x** --- PsychoPy requires Python < 3.12. Install from [python.org](https://www.python.org/downloads/) or via `winget install Python.Python.3.11`
+- **Basler Pylon SDK** --- Required for Lab Mode only; not needed for Dev Mode. Download from [baslerweb.com](https://www.baslerweb.com/en/downloads/software-downloads/)
 
-# Install Basler Pylon SDK from https://www.baslerweb.com/en/downloads/software-downloads/
-# (Required for Lab Mode; not needed for Dev Mode)
-```
-
-### 2. Clone and Set Up
+### 2. Clone and Install
 
 ```bash
 git clone https://github.com/Rotem-Aizenberg/basler-mental-imagery-exp.git
 cd basler-mental-imagery-exp
-
-# Create virtual environment with Python 3.11
-py -3.11 -m venv .venv
-
-# Activate virtual environment
-.venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
