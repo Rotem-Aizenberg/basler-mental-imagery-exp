@@ -1,6 +1,6 @@
-# LSCI Visual Mental Imagery Experiment
+# LSI Visual Mental Imagery Experiment
 
-A research-grade experiment application for studying **Laser Speckle Contrast Imaging (LSCI)** responses during visual mental imagery tasks. The system presents geometric shapes with synchronized audio cues, records high-speed video of a subject's tissue via a Basler industrial camera, and manages multi-participant sessions with full data logging.
+A research-grade experiment application for studying **Laser Speckle Imaging (LSI)** responses during visual mental imagery tasks. The system presents geometric shapes with synchronized audio cues, records high-speed video of a subject's tissue via a Basler industrial camera, and manages multi-participant sessions with full data logging.
 
 Built with **PyQt5** (operator GUI), **PsychoPy** (frame-accurate stimulus/audio), and **pypylon/OpenCV** (camera acquisition).
 
