@@ -357,7 +357,7 @@ All other functionality (wizard, stimulus timing, audio, data logging, progress 
 | Package | Version | Purpose |
 |---------|---------|---------|
 | PyQt5 | >= 5.15 | Operator GUI framework |
-| psychopy | >= 2023.1 | Stimulus display and audio with frame-accurate timing |
+| psychopy | >= 2024.1.0 | Stimulus display and audio with frame-accurate timing |
 | pypylon | >= 2.0 | Basler camera SDK bindings (Lab Mode only) |
 | opencv-python | >= 4.5 | Video recording (MJPG/AVI) and webcam fallback |
 | numpy | >= 1.21 | Array operations for frame and audio buffers |

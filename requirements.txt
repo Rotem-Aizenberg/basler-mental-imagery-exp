@@ -4,5 +4,5 @@ numpy>=1.21
 opencv-python>=4.5
 openpyxl>=3.0
 pypylon>=2.0
-psychopy>=2023.1
+psychopy>=2024.1.0
 sounddevice>=0.4
