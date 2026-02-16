@@ -36,6 +36,21 @@ cd APP
 build.bat
 ```
 
+### Step 2.5: (Optional) Validate Environment
+
+Before building, you can optionally validate that your environment is ready:
+
+```cmd
+python validate_environment.py
+```
+
+This will check:
+- Python version
+- Required files
+- Audio files
+- Disk space
+- Dependencies
+
 The build script will:
 1. Install PyInstaller (the tool that creates the executable)
 2. Install all application dependencies

@@ -13,28 +13,26 @@ project_root = Path(SPECPATH).parent.absolute()
 
 block_cipher = None
 
+# Collect data files
+datas = []
+
+# Add MP3 audio files
+audio_dir = project_root / 'external_instruction_recordings'
+if audio_dir.exists():
+    for mp3_file in audio_dir.glob('*.mp3'):
+        datas.append((str(mp3_file), 'external_instruction_recordings'))
+
+# Add config file
+config_file = project_root / 'config' / 'defaults.json'
+if config_file.exists():
+    datas.append((str(config_file), 'config'))
+
 # Collect all Python files from the project
 a = Analysis(
     [str(project_root / 'main.py')],
     pathex=[str(project_root)],
     binaries=[],
-    datas=[
-        # Include MP3 audio files
-        (str(project_root / 'external_instruction_recordings' / '*.mp3'), 'external_instruction_recordings'),
-        # Include config files
-        (str(project_root / 'config' / 'defaults.json'), 'config'),
-        # Include all Python modules from the project
-        (str(project_root / 'config' / '*.py'), 'config'),
-        (str(project_root / 'core' / '*.py'), 'core'),
-        (str(project_root / 'hardware' / '*.py'), 'hardware'),
-        (str(project_root / 'audio' / '*.py'), 'audio'),
-        (str(project_root / 'stimulus' / '*.py'), 'stimulus'),
-        (str(project_root / 'data' / '*.py'), 'data'),
-        (str(project_root / 'gui' / '*.py'), 'gui'),
-        (str(project_root / 'gui' / 'dialogs' / '*.py'), 'gui/dialogs'),
-        (str(project_root / 'gui' / 'panels' / '*.py'), 'gui/panels'),
-        (str(project_root / 'utils' / '*.py'), 'utils'),
-    ],
+    datas=datas,
     hiddenimports=[
         'PyQt5',
         'PyQt5.QtCore',
