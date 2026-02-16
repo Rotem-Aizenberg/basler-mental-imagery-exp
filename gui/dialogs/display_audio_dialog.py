@@ -139,15 +139,27 @@ class DisplayAudioDialog(QDialog):
             logger.warning("Screen test failed: %s", e)
 
     def _test_speaker(self) -> None:
-        """Play a short beep through the selected speaker."""
+        """Play a short beep through the selected speaker.
+
+        Uses ``sounddevice`` directly instead of PsychoPy Sound so that the
+        PTB audio backend is never initialised on the Qt main-thread (which
+        causes a crash due to conflicting event-loops).
+        """
         device_name = self._speaker_combo.currentData()
         try:
-            from audio import configure_audio
-            configure_audio(device_name or "")
-            from audio.audio_manager import AudioManager
-            from config.settings import AudioSettings
-            mgr = AudioManager(AudioSettings())
-            mgr.test_output()
+            import sounddevice as sd
+            from audio.tone_generator import generate_sine_tone
+
+            tone = generate_sine_tone(440.0, 0.15, 44100, 0.5)
+
+            device = None
+            if device_name:
+                for i, d in enumerate(sd.query_devices()):
+                    if d['name'] == device_name and d['max_output_channels'] > 0:
+                        device = i
+                        break
+
+            sd.play(tone, samplerate=44100, device=device)
         except Exception as e:
             logger.warning("Speaker test failed: %s", e)
 
