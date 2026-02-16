@@ -36,6 +36,10 @@ def main():
     
     if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 11):
         print("⚠️  Warning: Python 3.11+ is recommended for this application")
+    elif python_version.major == 3 and python_version.minor >= 12:
+        # Python 3.12+ may have PsychoPy compatibility issues
+        print("⚠️  Warning: Python 3.12+ detected. PsychoPy may have compatibility issues.")
+        print("   Recommended: Python 3.11.x")
     
     # Get paths
     script_dir = Path(__file__).parent.absolute()

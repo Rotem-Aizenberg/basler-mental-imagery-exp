@@ -17,7 +17,8 @@ def check_python_version():
     if version.major < 3:
         print("  ✗ Python 3 is required")
         return False
-    elif version.major == 3 and version.minor > 11:
+    elif version.major == 3 and version.minor >= 12:
+        # Python 3.12+ may have PsychoPy compatibility issues
         print("  ⚠ Python 3.12+ detected. PsychoPy may have compatibility issues.")
         print("    Recommended: Python 3.11.x")
         return True

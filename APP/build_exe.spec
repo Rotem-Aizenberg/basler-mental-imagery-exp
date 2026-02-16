@@ -66,9 +66,7 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        'tkinter',
-        'tk',
-        'tcl',
+        'tkinter',  # Excludes tk and tcl automatically
         'jupyter',
         'IPython',
         'notebook',
