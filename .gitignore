@@ -6,6 +6,11 @@ __pycache__/
 dist/
 build/
 
+# APP folder build artifacts (keep source files, ignore build output)
+APP/dist/
+APP/build/
+APP/*.spec.bak
+
 # Virtual environment
 .venv/
 venv/
