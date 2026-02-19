@@ -19,7 +19,11 @@ class _MirrorCanvas(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._state = "idle"
+        self._shape_color = QColor(255, 255, 255)  # default white
         self.setMinimumSize(200, 150)
+
+    def set_shape_color(self, hex_color: str) -> None:
+        self._shape_color = QColor(hex_color)
 
     def set_state(self, state: str) -> None:
         self._state = state
@@ -78,9 +82,9 @@ class _MirrorCanvas(QWidget):
         p.end()
 
     def _draw_shape(self, p: QPainter, shape: str, w: int, h: int) -> None:
-        """Draw a white shape on black background."""
+        """Draw a colored shape on black background."""
         p.setPen(Qt.NoPen)
-        p.setBrush(QColor(255, 255, 255))
+        p.setBrush(self._shape_color)
         cx, cy = w // 2, h // 2
         size = min(w, h) * 0.35
 
@@ -126,6 +130,10 @@ class StimulusMirrorPanel(QGroupBox):
         layout = QVBoxLayout()
         layout.addWidget(self._canvas)
         self.setLayout(layout)
+
+    def set_shape_color(self, hex_color: str) -> None:
+        """Set the color used for shape rendering in the mirror."""
+        self._canvas.set_shape_color(hex_color)
 
     def update_state(self, state: str) -> None:
         """Update the mirror display.
