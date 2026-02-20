@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
         worker.stimulus_update.connect(self._on_stimulus_update)
         worker.beep_progress.connect(self._on_beep_progress)
 
-        self.control_panel.update_for_state(ExperimentState.RUNNING)
+        self.control_panel.set_preparing()
         self.progress_panel.set_status("Please wait.. preparing the experiment...")
         self.progress_panel.set_phase_text("Initializing")
 

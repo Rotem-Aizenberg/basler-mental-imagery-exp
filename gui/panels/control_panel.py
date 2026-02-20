@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import (
-    QGroupBox, QHBoxLayout, QVBoxLayout, QPushButton,
+    QGroupBox, QHBoxLayout, QVBoxLayout, QPushButton, QLabel,
 )
 
 from core.enums import ExperimentState
@@ -23,6 +23,7 @@ class ControlPanel(QGroupBox):
     def __init__(self, parent=None):
         super().__init__("Controls", parent)
         self._is_paused = False
+        self._preparing = False  # True between Start and first WAITING_CONFIRM
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -64,6 +65,14 @@ class ControlPanel(QGroupBox):
         self._stop_btn.hide()
         btn_layout.addWidget(self._stop_btn)
 
+        self._wait_label = QLabel("Please wait.. preparing the experiment...")
+        self._wait_label.setAlignment(Qt.AlignCenter)
+        self._wait_label.setStyleSheet(
+            "font-size: 13px; font-weight: bold; color: #1565c0; padding: 10px;"
+        )
+        self._wait_label.hide()
+        btn_layout.addWidget(self._wait_label)
+
         layout.addLayout(btn_layout)
         self.setLayout(layout)
 
@@ -77,6 +86,16 @@ class ControlPanel(QGroupBox):
             self._pause_btn.setText("Resume")
             self._is_paused = True
 
+    def set_preparing(self) -> None:
+        """Show 'Please wait' instead of buttons while engine initializes."""
+        self._preparing = True
+        self._start_btn.hide()
+        self._pause_btn.hide()
+        self._confirm_btn.hide()
+        self._skip_btn.hide()
+        self._stop_btn.hide()
+        self._wait_label.show()
+
     def update_for_state(self, state: ExperimentState) -> None:
         """Show/hide buttons based on experiment state."""
         # Hide all first
@@ -85,11 +104,16 @@ class ControlPanel(QGroupBox):
         self._confirm_btn.hide()
         self._skip_btn.hide()
         self._stop_btn.hide()
+        self._wait_label.hide()
 
         if state == ExperimentState.IDLE:
             self._start_btn.show()
 
         elif state == ExperimentState.RUNNING:
+            if self._preparing:
+                # Still initializing — keep showing "Please wait"
+                self._wait_label.show()
+                return
             self._pause_btn.show()
             self._stop_btn.show()
 
@@ -100,12 +124,13 @@ class ControlPanel(QGroupBox):
             self._stop_btn.show()
 
         elif state == ExperimentState.WAITING_CONFIRM:
+            self._preparing = False  # Engine is ready
             self._confirm_btn.show()
             self._skip_btn.show()
             self._stop_btn.show()
 
         elif state in (ExperimentState.COMPLETED, ExperimentState.ABORTED, ExperimentState.ERROR):
-            # App will shut down — no buttons needed
+            self._preparing = False
             pass
 
     def set_idle(self) -> None:
