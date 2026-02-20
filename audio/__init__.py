@@ -5,7 +5,10 @@ import anywhere in the codebase.  The preference must be set before
 PsychoPy initialises its audio subsystem.
 """
 
+import logging
+
 _configured_device = None
+_logger = logging.getLogger(__name__)
 
 
 def configure_audio(device_name: str = "") -> None:
@@ -24,32 +27,31 @@ def configure_audio(device_name: str = "") -> None:
         if device_name:
             prefs.hardware['audioDevice'] = [device_name]
             _configured_device = device_name
-        else:
-            # PTB's default resolution maps to legacy Windows names like
-            # "Microsoft Sound Mapper - Output" which PTB itself can't find.
-            # Use sounddevice to detect a real device name, skipping legacy
-            # virtual devices that only exist in the MME API.
-            _LEGACY = {"Microsoft Sound Mapper", "Primary Sound Driver"}
-            try:
-                import sounddevice as sd
-                # Try the system default first
-                default_idx = sd.default.device[1]
-                if default_idx >= 0:
-                    name = sd.query_devices(default_idx)['name']
-                    if not any(leg in name for leg in _LEGACY):
-                        prefs.hardware['audioDevice'] = [name]
-                        _configured_device = name
-                        return
-                # Default is a legacy device — find first real output device
-                for d in sd.query_devices():
-                    if d['max_output_channels'] > 0:
-                        if not any(leg in d['name'] for leg in _LEGACY):
-                            prefs.hardware['audioDevice'] = [d['name']]
-                            _configured_device = d['name']
-                            return
-            except Exception:
-                pass
+        # Otherwise leave audioDevice unset — let PsychoPy/PTB pick the
+        # system default.  Previous code tried to resolve device names
+        # via sounddevice, but those names don't always match what PTB
+        # expects (e.g. "SONY TV (Intel(R) Display Audio)" vs PTB's own
+        # enumeration), causing DeviceNotConnectedError on other PCs.
     except ImportError:
+        pass
+
+
+def reconfigure_audio_fallback() -> None:
+    """Re-configure audio to try alternative backends after a device error.
+
+    Called automatically by AudioManager when the primary backend fails.
+    Switches to sounddevice backend which has broader device compatibility.
+    """
+    global _configured_device
+    try:
+        from psychopy import prefs
+        prefs.hardware['audioLib'] = ['sounddevice', 'pygame']
+        prefs.hardware['audioLatencyMode'] = 0  # safe mode
+        if 'audioDevice' in prefs.hardware:
+            prefs.hardware['audioDevice'] = []
+        _configured_device = None
+        _logger.info("Audio reconfigured to sounddevice fallback")
+    except Exception:
         pass
 
 

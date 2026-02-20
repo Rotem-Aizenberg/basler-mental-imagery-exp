@@ -64,14 +64,39 @@ class AudioManager:
             logger.warning("PsychoPy audio not available: %s", e)
             self._available = False
 
+    def _reinit_with_fallback(self) -> None:
+        """Re-initialize audio with fallback backend after device error."""
+        from audio import reconfigure_audio_fallback
+        reconfigure_audio_fallback()
+        # Force PsychoPy to re-create sound backend
+        try:
+            import importlib
+            from psychopy import sound
+            importlib.reload(sound)
+            self._sound_module = sound
+            self._available = True
+            logger.info("PsychoPy audio re-initialized with fallback backend")
+        except Exception as e:
+            logger.warning("Fallback audio init also failed: %s", e)
+            self._available = False
+
     def _make_sound(self, buf: np.ndarray) -> object:
         """Wrap a 1-D float32 numpy buffer in a PsychoPy Sound object."""
         # PsychoPy expects (n_samples, n_channels) float array
         buf_2d = buf.astype(np.float64).reshape(-1, 1)
-        return self._sound_module.Sound(
-            value=buf_2d,
-            sampleRate=self._settings.sample_rate,
-        )
+        try:
+            return self._sound_module.Sound(
+                value=buf_2d,
+                sampleRate=self._settings.sample_rate,
+            )
+        except Exception as e:
+            # Device error — try fallback backend
+            logger.warning("Sound creation failed (%s), trying fallback", e)
+            self._reinit_with_fallback()
+            return self._sound_module.Sound(
+                value=buf_2d,
+                sampleRate=self._settings.sample_rate,
+            )
 
     def _load_instructions(self, instruction_dir: str) -> None:
         """Load MP3 instruction files via PsychoPy Sound."""
@@ -87,6 +112,18 @@ class AudioManager:
         if not base.is_absolute():
             base = Path(__file__).resolve().parent.parent / base
 
+        self._do_load_instructions(base)
+
+        # If no instructions loaded and we haven't tried fallback yet,
+        # the audio device may be incompatible — retry with fallback backend
+        if not self._instructions and self._available:
+            logger.warning("No instructions loaded — retrying with fallback audio backend")
+            self._reinit_with_fallback()
+            if self._available:
+                self._do_load_instructions(base)
+
+    def _do_load_instructions(self, base: Path) -> None:
+        """Attempt to load all instruction MP3s from the given directory."""
         loaded = 0
         for name, filename in _INSTRUCTION_FILES.items():
             mp3_path = base / filename
