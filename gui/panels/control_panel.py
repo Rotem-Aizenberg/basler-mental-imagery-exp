@@ -2,12 +2,64 @@
 
 from __future__ import annotations
 
-from PyQt5.QtCore import pyqtSignal, Qt
+import math
+
+from PyQt5.QtCore import pyqtSignal, Qt, QTimer, QRectF
+from PyQt5.QtGui import QPainter, QColor, QPen
 from PyQt5.QtWidgets import (
-    QGroupBox, QHBoxLayout, QVBoxLayout, QPushButton, QLabel,
+    QGroupBox, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QWidget,
 )
 
 from core.enums import ExperimentState
+
+
+class SpinnerWidget(QWidget):
+    """Windows-style spinning circle indicator with rotating dots."""
+
+    def __init__(self, size: int = 28, parent=None):
+        super().__init__(parent)
+        self._dot_count = 8
+        self._angle = 0
+        self._color = QColor("#1565c0")
+        self.setFixedSize(size, size)
+
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._rotate)
+
+    def start(self) -> None:
+        self._timer.start(80)
+
+    def stop(self) -> None:
+        self._timer.stop()
+
+    def _rotate(self) -> None:
+        self._angle = (self._angle + 30) % 360
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w, h = self.width(), self.height()
+        cx, cy = w / 2, h / 2
+        radius = min(w, h) / 2 - 4
+
+        for i in range(self._dot_count):
+            angle_rad = math.radians(self._angle + i * (360 / self._dot_count))
+            x = cx + radius * math.cos(angle_rad)
+            y = cy + radius * math.sin(angle_rad)
+
+            # Trailing dots fade out and shrink
+            opacity = max(0.15, 1.0 - i * 0.12)
+            dot_r = max(1.5, 3.0 - i * 0.2)
+
+            color = QColor(self._color)
+            color.setAlphaF(opacity)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(color)
+            painter.drawEllipse(QRectF(x - dot_r, y - dot_r, dot_r * 2, dot_r * 2))
+
+        painter.end()
 
 
 class ControlPanel(QGroupBox):
@@ -65,13 +117,26 @@ class ControlPanel(QGroupBox):
         self._stop_btn.hide()
         btn_layout.addWidget(self._stop_btn)
 
+        # "Please wait" container with spinner + label
+        self._wait_container = QWidget()
+        wait_layout = QHBoxLayout()
+        wait_layout.setContentsMargins(0, 0, 0, 0)
+        wait_layout.addStretch()
+
+        self._spinner = SpinnerWidget(28, self._wait_container)
+        wait_layout.addWidget(self._spinner)
+
         self._wait_label = QLabel("Please wait.. preparing the experiment...")
-        self._wait_label.setAlignment(Qt.AlignCenter)
+        self._wait_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self._wait_label.setStyleSheet(
             "font-size: 13px; font-weight: bold; color: #1565c0; padding: 10px;"
         )
-        self._wait_label.hide()
-        btn_layout.addWidget(self._wait_label)
+        wait_layout.addWidget(self._wait_label)
+
+        wait_layout.addStretch()
+        self._wait_container.setLayout(wait_layout)
+        self._wait_container.hide()
+        btn_layout.addWidget(self._wait_container)
 
         layout.addLayout(btn_layout)
         self.setLayout(layout)
@@ -87,14 +152,15 @@ class ControlPanel(QGroupBox):
             self._is_paused = True
 
     def set_preparing(self) -> None:
-        """Show 'Please wait' instead of buttons while engine initializes."""
+        """Show 'Please wait' with spinner instead of buttons while engine initializes."""
         self._preparing = True
         self._start_btn.hide()
         self._pause_btn.hide()
         self._confirm_btn.hide()
         self._skip_btn.hide()
         self._stop_btn.hide()
-        self._wait_label.show()
+        self._wait_container.show()
+        self._spinner.start()
 
     def update_for_state(self, state: ExperimentState) -> None:
         """Show/hide buttons based on experiment state."""
@@ -104,15 +170,17 @@ class ControlPanel(QGroupBox):
         self._confirm_btn.hide()
         self._skip_btn.hide()
         self._stop_btn.hide()
-        self._wait_label.hide()
+        self._wait_container.hide()
+        self._spinner.stop()
 
         if state == ExperimentState.IDLE:
             self._start_btn.show()
 
         elif state == ExperimentState.RUNNING:
             if self._preparing:
-                # Still initializing — keep showing "Please wait"
-                self._wait_label.show()
+                # Still initializing — keep showing "Please wait" with spinner
+                self._wait_container.show()
+                self._spinner.start()
                 return
             self._pause_btn.show()
             self._stop_btn.show()
