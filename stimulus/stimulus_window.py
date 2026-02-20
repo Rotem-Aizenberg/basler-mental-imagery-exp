@@ -26,15 +26,29 @@ class StimulusWindow:
     """
 
     def __init__(self, screen: int = 0, dev_mode: bool = False):
-        from psychopy import visual
+        from psychopy import visual, monitors
+
+        # Create a monitor profile with the actual screen resolution so
+        # PsychoPy doesn't fall back to a stale/default [800, 600] profile.
+        # This makes the experiment portable across PCs without needing
+        # manual PsychoPy Monitor Center configuration.
+        screen_res = self._detect_screen_resolution(screen)
+        mon = monitors.Monitor("experiment_monitor")
+        mon.setSizePix(screen_res)
+        mon.setWidth(53)    # approximate cm — irrelevant for "height" units
+        mon.setDistance(60)  # approximate cm — irrelevant for "height" units
+        mon.saveMon()
 
         self._win = visual.Window(
+            size=screen_res,
             fullscr=True,
             screen=screen,
+            monitor=mon,
             color=[-1, -1, -1],   # black
             units="height",
             waitBlanking=True,
             allowGUI=False,
+            checkTiming=False,  # we measure frame rate ourselves below
         )
         self._stims: Dict[str, object] = {}
 
@@ -43,6 +57,50 @@ class StimulusWindow:
         self._frame_rate = self._measure_frame_rate(dev_mode)
         # Clear the message — show black screen
         self._win.flip()
+
+    @staticmethod
+    def _detect_screen_resolution(screen: int) -> list:
+        """Detect the resolution of the target screen.
+
+        Tries multiple backends (Qt, tkinter, ctypes) so this works on
+        any PC regardless of what GUI toolkit is available.
+        """
+        try:
+            from PyQt5.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                screens = app.screens()
+                if screen < len(screens):
+                    geo = screens[screen].size()
+                    res = [geo.width(), geo.height()]
+                    logger.info("Screen %d resolution (Qt): %s", screen, res)
+                    return res
+        except Exception:
+            pass
+
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()
+            res = [root.winfo_screenwidth(), root.winfo_screenheight()]
+            root.destroy()
+            logger.info("Screen resolution (tkinter): %s", res)
+            return res
+        except Exception:
+            pass
+
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32
+            user32.SetProcessDPIAware()
+            res = [user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)]
+            logger.info("Screen resolution (ctypes): %s", res)
+            return res
+        except Exception:
+            pass
+
+        logger.warning("Could not detect screen resolution, using 1920x1080 default")
+        return [1920, 1080]
 
     def _show_message(self, text: str) -> None:
         """Display a text message on the stimulus window."""
